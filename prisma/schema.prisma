@@ -1,0 +1,55 @@
+// Caminho: MIL_EVENTOS/prisma/schema.prisma
+
+// ... (Models User, BusinessProfile, Client, Proposal e Enums já definidas)
+
+// 1.5. Eventos Operacionais (events)
+model Event {
+  id               String            @id @default(uuid())
+  user_id          String
+  user             User              @relation(fields: [user_id], references: [id])
+  
+  // Relacionamento com a Proposta (1:1 ou 1:N, sugerindo 1:1 após fechamento)
+  proposal_id      String            @unique
+  proposal         Proposal          @relation(fields: [proposal_id], references: [id])
+  
+  title            String
+  date             DateTime          @db.Timestamp(3) // Inclui hora
+  type             String            // Pode ser um Enum, ou apenas String por flexibilidade
+  location         String?
+  startTime        String?           @db.Time
+  endTime          String?           @db.Time
+  
+  // Dados complexos em JSONB (PostgreSQL)
+  checklist        Json?             @db.JsonB // [{id, text, done}]
+  timeline         Json?             @db.JsonB // [{time, title, desc}]
+  costs            Json?             @db.JsonB // Estrutura de custos (se não for modelado em tabela separada)
+  
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+// 1.6. Transações Financeiras (transactions)
+model Transaction {
+  id               String            @id @default(uuid())
+  user_id          String
+  user             User              @relation(fields: [user_id], references: [id])
+
+  proposal_id      String?
+  proposal         Proposal?         @relation(fields: [proposal_id], references: [id])
+  
+  description      String
+  clientName       String
+  amount           Decimal           @db.Decimal(10, 2)
+  date             DateTime          @db.Date // Apenas data
+  status           TransactionStatus @default(PENDING)
+  
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+// Novo Enum para status da transação
+enum TransactionStatus {
+  PAID
+  PENDING
+  OVERDUE
+}
